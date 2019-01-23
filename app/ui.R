@@ -65,20 +65,31 @@ shinyUI(dashboardPage(skin = 'black',
       )
     ),
     tabItem(tabName='nav_con',
-      box(width = 12, title = 'Data Selection', fluidRow(
-        column(width = 6,
+      box(width = 6, title = 'Constraint Weights',
+        checkboxInput(
+          'check_constraints_constant',
+          'Set all constraint weights to 1'
+        ),
+        conditionalPanel("!input.check_constraints_constant",
           fileInput('file_constraints', 'CSV of Constraint Weights',
             multiple = FALSE,
             accept   = c('text/csv', 'text/comma-separated-values', '.csv')
           )
+        )
+      ),
+      box(width = 6, title = 'Filtering Variables',
+        checkboxInput(
+          'check_constraints_filter',
+          'Use variables for row filters',
+          value = FALSE
         ),
-        column(width = 6,
+        conditionalPanel("input.check_constraints_filter",
           fileInput('file_variables', 'CSV of Constraint Variables',
             multiple = FALSE,
             accept   = c('text/csv', 'text/comma-separated-values', '.csv')
           )
         )
-      )),
+      ),
       box(width = 12, title = 'Constraint Specification',
         # select a variable and value combination to apply to (or all)
         fluidRow(
@@ -105,9 +116,12 @@ shinyUI(dashboardPage(skin = 'black',
           )
         )
       ),
-      box(width = 12, title = 'Constraints',
+      box(width = 12,
+        title = span(
+          'Constraints',
+          actionButton('button_del_all', 'Clear All', class='btn-xs')
+        ),
         div(align = 'center',
-          actionButton(width = '50%', 'button_del_all', 'Clear All'),
           dataTableOutput('dt_constraints'),
           uiOutput('ui_button_con_delete')
         )

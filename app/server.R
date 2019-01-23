@@ -43,11 +43,24 @@ shinyServer(function(input, output, clientData, session) {
   ################################################################################
 
   data_constraints <- reactive({
-    file <- input$file_constraints
-    if(is.null(file)) return(NULL)
-    tryCatch({
-      read_csv(file$datapath)
-    }, error = raise_error)
+    # check if constant 1 weight is toggled
+    if(input$check_constraints_constant) {
+      if(is.null(data_objective())) {
+        return(NULL)
+      } else {
+        rows <- nrow(data_objective())
+        print(rows)
+        vec <- rep(1, rows)
+        data_objective() %>% mutate_all(function(x) vec)
+      }
+    } else {
+      # load input csv
+      file <- input$file_constraints
+      if(is.null(file)) return(NULL)
+      tryCatch({
+        read_csv(file$datapath)
+      }, error = raise_error)
+    }
   })
 
   data_variables <- reactive({
@@ -182,7 +195,7 @@ shinyServer(function(input, output, clientData, session) {
   # show download option if optimiser has been run
   output$ui_dl_results <- renderUI({
     req(res <- val_results_cleaned())
-    downloadButton('dl_results', 'Download Output')
+    downloadButton('dl_results', 'Download Entire Output')
   })
   output$dl_results <- downloadHandler(
       filename = function() {
