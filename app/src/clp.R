@@ -50,7 +50,7 @@ solve_lp <- function(obj_mat, con_mat, dir = -1,
   solveInitialCLP(prob)
 
   results <- list(
-    status   = getSolStatusCLP(prob),
+    status   = status_codeCLP(getSolStatusCLP(prob)),
     obj_val  = getObjValCLP(prob),
     col_prim = getColPrimCLP(prob),
     col_dual = getColDualCLP(prob),

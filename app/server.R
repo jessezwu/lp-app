@@ -144,31 +144,46 @@ shinyServer(function(input, output, clientData, session) {
   observeEvent(input$button_run, {
     tryCatch({
       if(is.null(data_objective())) stop('No Data Available!', call. = FALSE)
-      obj_mat <- data_objective() %>% as.matrix()
-      # generic constraints
-      initial_constraints <- gen_one_hot_constraint(obj_mat)
-      con_mat <- initial_constraints[['mat']]
-      clb <- rep(0, ncol(con_mat))
-      cub <- rep(1, ncol(con_mat))
-      rlb <- initial_constraints[['rlb']]
-      rub <- initial_constraints[['rub']]
-      dir <- -1
-      # user specified constraints
-      user <- val_constraints()
-      if(nrow(user) > 0) {
-        con_coefs <- data_constraints()
-        vars <- data_variables()
-        cons <- get_constraints(con_coefs, vars, user)
-        con_mat <- rbind(con_mat, cons$con_mat)
-        rlb <- c(rlb, cons$rlb)
-        rub <- c(rub, cons$rub)
-      }
-      saveRDS(list(obj_mat = obj_mat, con_mat = con_mat, dir = dir, clb = clb, cub = cub, rlb = rlb, rub = rub), 'args.RDS')
+      withProgress(message = 'Optimising...', {
+        obj_mat <- data_objective() %>% as.matrix()
+        # generic constraints
+        initial_constraints <- gen_one_hot_constraint(obj_mat)
+        con_mat <- initial_constraints[['mat']]
+        clb <- rep(0, ncol(con_mat))
+        cub <- rep(1, ncol(con_mat))
+        rlb <- initial_constraints[['rlb']]
+        rub <- initial_constraints[['rub']]
+        dir <- -1
+        setProgress(0.2, detail = 'setting user constraints')
+        # user specified constraints
+        user <- val_constraints()
+        if(nrow(user) > 0) {
+          con_coefs <- data_constraints()
+          vars <- data_variables()
+          cons <- get_constraints(con_coefs, vars, user)
+          con_mat <- rbind(con_mat, cons$con_mat)
+          rlb <- c(rlb, cons$rlb)
+          rub <- c(rub, cons$rub)
+        }
+        # TODO: remove this
+        #saveRDS(list(obj_mat = obj_mat, con_mat = con_mat, dir = dir, clb = clb, cub = cub, rlb = rlb, rub = rub), 'args.RDS')
 
-      # TODO: progress bar, split into chunks etc
-      res <- solve_lp(obj_mat, con_mat, dir = dir, clb = clb, cub = cub, rlb = rlb, rub = rub)
-
+        # TODO: split into chunks
+        setProgress(0.3, detail = 'solving')
+        res <- solve_lp(
+          obj_mat, con_mat,
+          dir = dir, clb = clb, cub = cub, rlb = rlb, rub = rub
+        )
+      })
+      # store results
       val_results(res)
+      # message with status and objective result
+      showModal(modalDialog(
+        title = 'Results',
+        p(sprintf('Optimiser status: %s', res$status)),
+        p(sprintf('Objective value: %f', res$obj_val)),
+        easyClose = TRUE
+      ))
     }, error = function(e) raise_error(e))
   })
 
