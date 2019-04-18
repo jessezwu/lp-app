@@ -9,20 +9,20 @@ shinyUI(dashboardPage(skin = 'black',
   dashboardSidebar(width = 300, fluidPage(
     useShinyjs(),
     sidebarMenu(id = 'menu',
-      menuItem('Guide', 
-        tabName = 'nav_info', 
+      menuItem('Guide',
+        tabName = 'nav_info',
         icon = icon('info')
       ),
-      menuItem('Data', 
-        tabName = 'nav_data', 
+      menuItem('Data',
+        tabName = 'nav_data',
         icon = icon('table')
       ),
-      menuItem('Constraints', 
-        tabName = 'nav_con', 
+      menuItem('Constraints',
+        tabName = 'nav_con',
         icon = icon('arrows-alt')
       ),
-      menuItem('Optimiser', 
-        tabName = 'nav_optim', 
+      menuItem('Optimiser',
+        tabName = 'nav_optim',
         icon = icon('calculator')
       )
     )
@@ -32,31 +32,91 @@ shinyUI(dashboardPage(skin = 'black',
     tabItem(tabName = 'nav_info',
       box(width = 12, title = 'Instructions',
         tags$ol(
-          tags$li('Upload a dataset with the objective to optimise'),
-          tags$ul(
-            tags$li('
-              This should be a csv where rows are records of interest, and
-              columns are potential actions to take on those records.  Each
-              entry for a row and column combination should represent the value
-              obtained by taking that action for that record.
-            ')
-          ),
-          tags$li('Optionally upload a dataset corresponding to constraints'),
-          tags$ul(
-            tags$li('
-              This should have the same structure as the objective dataset, but
-              instead of entries corresponding to value of an option, these
-              should represent weights for each option that must be taken into
-              account as limitations.
-            ')
-          ),
+          tags$li('Upload a csv dataset with the objective to optimise'),
+          tags$li('Optionally upload datasets corresponding to constraint
+                  weights and filtering variables'),
           tags$li('Configure optimisation parameters and run!')
+        )
+      ),
+      box(width = 12,
+        strong('Inputs'),
+        tags$ul(
+          tags$li('
+            A dataset defining objective values - what you are trying to
+            maximise.
+          '),
+          tags$ul(
+            tags$li('Rows should be individual records to be optimised.'),
+            tags$li('Columns should correspond to potential actions to be
+                    applied to each row.'),
+            tags$li("
+              A value for a combination of row 'i' and column 'j' should then
+              indicate the predicted value for record 'i' given action 'j'.
+            ")
+          ),
+          tags$li('
+            (Optional) Additional constraints can be imposed using a separate file.
+          '),
+          tags$ul(
+            tags$li('
+              This must represent the same records and actions from the
+              original objective dataset, and assumes that row order is the
+              same.
+            '),
+            tags$li('
+              The values for each row and column combination should represent a
+              weight or coefficient to be applied to each action.
+            ')
+          ),
+          tags$li('
+            (Optional) A further third dataset can be used to selectively apply
+            constraints to particular rows.
+          '),
+          tags$ul(
+            tags$li('
+              Each column here indicates a feature that can be used to create
+              constraints that are restricted or filtered to a set of rows.
+            ')
+          )
+        ),
+        strong('Outputs'),
+        tags$ul(
+          tags$li('A choice of action for each row.'),
+          tags$li('
+            Warnings will be given if the problem is unsolvable, e.g. when
+            constraints are too extreme or contradictory.
+          ')
+        ),
+        strong('Example'),
+        tags$ul(
+          tags$li('
+            Take a marketing example where records are potential customers and
+            you want to maximise profit. We have two actions, do nothing or
+            send some marketing material. The objective dataset should have an
+            expected or predicted profit value for each customer (row) and
+            under each action (two columns).
+          '),
+          tags$li('
+            You might want to enforce a maximum limit on the number of people
+            to be targeted by marketing. Since this only cares about total
+            numbers, the constraint weights will just a be a matrix of 1s. You
+            could then set a constraint like: only up to 100 people can be sent
+            marketing material.
+          '),
+          tags$li('
+            If you want a constraint on conversion instead of total numbers,
+            the constraint weights should then be conversion probability given
+            a record and action. You can also define other variables, using the
+            third dataset, to selectively apply your conversion constraint to
+            particular records. So the optimiser might run under the condition
+            that 18 year olds must have at least an average conversion of 80%.
+          ')
         )
       )
     ),
     tabItem(tabName='nav_data',
       box(width = 12, title = 'Data Selection',
-        fileInput('file_objective', 'CSV of Objective Weights',
+        fileInput('file_objective', 'CSV of Objective Values',
           multiple = FALSE,
           accept = c('text/csv', 'text/comma-separated-values', '.csv')
         ),
@@ -70,7 +130,7 @@ shinyUI(dashboardPage(skin = 'black',
           'check_constraints_constant',
           'Set all constraint weights to 1'
         ),
-        conditionalPanel("!input.check_constraints_constant",
+        conditionalPanel('!input.check_constraints_constant',
           fileInput('file_constraints', 'CSV of Constraint Weights',
             multiple = FALSE,
             accept   = c('text/csv', 'text/comma-separated-values', '.csv')
@@ -83,7 +143,7 @@ shinyUI(dashboardPage(skin = 'black',
           'Use variables for row filters',
           value = FALSE
         ),
-        conditionalPanel("input.check_constraints_filter",
+        conditionalPanel('input.check_constraints_filter',
           fileInput('file_variables', 'CSV of Constraint Variables',
             multiple = FALSE,
             accept   = c('text/csv', 'text/comma-separated-values', '.csv')
@@ -128,7 +188,7 @@ shinyUI(dashboardPage(skin = 'black',
       )),
     tabItem(tabName='nav_optim',
       box(width = 12, title = 'Optimiser Options',
-        div(align = 'center', 
+        div(align = 'center',
           actionButton(width = '50%', 'button_run', 'Run Optimiser')
         )
         # TODO: maximum number of rows to optimise at once, sampling before running whole thing
