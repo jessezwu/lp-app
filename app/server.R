@@ -1,6 +1,7 @@
 library(doMC, quietly=TRUE)
 library(DT, warn.conflicts=FALSE)
 library(shiny, warn.conflicts=FALSE)
+library(shinyjs, warn.conflicts = FALSE)
 library(shinydashboard, warn.conflicts=FALSE, verbose=FALSE)
 
 options(warn=-1)
@@ -49,7 +50,6 @@ shinyServer(function(input, output, clientData, session) {
         return(NULL)
       } else {
         rows <- nrow(data_objective())
-        print(rows)
         vec <- rep(1, rows)
         data_objective() %>% mutate_all(function(x) vec)
       }
@@ -73,20 +73,23 @@ shinyServer(function(input, output, clientData, session) {
 
   # filter row variable
   output$ui_sel_con_var <- renderUI({
-    if(is.null(data_variables())) return()
+    if(!input$check_constraints_filter | is.null(data_variables())) return()
     selectizeInput('sel_con_var', 'Row Filter (Variable)',
-      choices = c('All', colnames(data_variables())))
+      choices = c('All', colnames(data_variables()))
+    )
   })
   # filter row values
   output$ui_sel_con_val <- renderUI({
-    if(is.null(data_variables())) return()
+    if(!input$check_constraints_filter | is.null(data_variables())) return()
     req(var <- input$sel_con_var)
     choices <- if(var == 'All') {
       'All'
     } else {
       c('All', data_variables() %>% pull(var) %>% unique %>% sort)
     }
-    selectizeInput('sel_con_val', 'Row Filter (Value)', choices = choices)
+    selectizeInput('sel_con_val', 'Row Filter (Value)',
+      choices = choices, multiple = TRUE
+    )
   })
   # filter column
   output$ui_sel_con_col <- renderUI({
@@ -96,7 +99,7 @@ shinyServer(function(input, output, clientData, session) {
   })
 
   # reactive value to store list of constraints
-  val_constraints <- reactiveVal(data.frame())
+  val_constraints <- reactiveVal(tibble())
 
   output$dt_constraints <- renderDataTable({
     val_constraints() %>%
@@ -105,10 +108,14 @@ shinyServer(function(input, output, clientData, session) {
 
   # add a constraint
   observeEvent(input$button_add_con, {
-    var <- if(is.null(input$sel_con_var)) 'All' else input$sel_con_var
-    val <- if(is.null(input$sel_con_val)) 'All' else input$sel_con_val
+    var <- if(is.null(input$sel_con_var) | !input$check_constraints_filter) {
+      'All'
+    } else {input$sel_con_var}
+    val <- if(is.null(input$sel_con_val) | !input$check_constraints_filter) {
+      'All'
+    } else {input$sel_con_val}
     col <- if(is.null(input$sel_con_col)) 'All' else input$sel_con_col
-    row <- data.frame(
+    row <- tibble(
       variable = var,
       value    = val,
       column   = col,
@@ -129,7 +136,6 @@ shinyServer(function(input, output, clientData, session) {
   # delete some selected constraints
   observeEvent(input$button_del_con, {
     req(rows <- input$dt_constraints_rows_selected)
-    str(rows)
     val_constraints(val_constraints()[-rows,])
   })
   # delete all
@@ -182,6 +188,7 @@ shinyServer(function(input, output, clientData, session) {
         title = 'Results',
         p(sprintf('Optimiser status: %s', res$status)),
         p(sprintf('Objective value: %f', res$obj_val)),
+        p(sprintf('User constraints: %d', nrow(user))),
         easyClose = TRUE
       ))
     }, error = function(e) raise_error(e))

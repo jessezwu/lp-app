@@ -19,9 +19,9 @@ get_constraints <- function(con_coefs, vars, cons) {
   rlb <- c()
   rub <- c()
   for(r in 1:nrow(cons)) {
-    var <- cons[r, 'variable']
-    val <- cons[r, 'value']
-    col <- cons[r, 'column']
+    var <- cons[[r, 'variable']]
+    val <- cons[[r, 'value']]
+    col <- cons[[r, 'column']]
     # compute indices corresponding to filtered data
     idx_row <- if(val == 'All') {
       1:nr
@@ -44,8 +44,8 @@ get_constraints <- function(con_coefs, vars, cons) {
     row_coefs <- vec_coefs
     row_coefs[as.vector(t(coefs)) %>% which] <- 0
     # bounds
-    lb <- if(is.na(cons[r, 'lower'])) {-Inf} else {cons[r, 'lower']}
-    ub <- if(is.na(cons[r, 'upper'])) {Inf} else {cons[r, 'upper']}
+    lb <- if(is.na(cons[[r, 'lower']])) {-Inf} else {cons[[r, 'lower']]}
+    ub <- if(is.na(cons[[r, 'upper']])) {Inf} else {cons[[r, 'upper']]}
     if(cons[r, 'type'] == 'mean') {
        lb <- lb * length(idx_row)
        ub <- ub * length(idx_row)
