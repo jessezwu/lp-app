@@ -128,7 +128,8 @@ shinyUI(dashboardPage(skin = 'black',
       box(width = 6, title = 'Constraint Weights',
         checkboxInput(
           'check_constraints_constant',
-          'Set all constraint weights to 1'
+          'Set all constraint weights to 1',
+          value = TRUE
         ),
         conditionalPanel('!input.check_constraints_constant',
           fileInput('file_constraints', 'CSV of Constraint Weights',
@@ -153,9 +154,9 @@ shinyUI(dashboardPage(skin = 'black',
       box(width = 12, title = 'Constraint Specification',
         # select a variable and value combination to apply to (or all)
         fluidRow(
+          column(width = 4, uiOutput('ui_sel_con_col')),
           column(width = 4, uiOutput('ui_sel_con_var')),
-          column(width = 4, uiOutput('ui_sel_con_val')),
-          column(width = 4, uiOutput('ui_sel_con_col'))
+          column(width = 4, uiOutput('ui_sel_con_val'))
         ),
         # bounds on values, these will be scaled by number of rows
         fluidRow(
